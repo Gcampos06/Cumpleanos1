@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuenta regresiva ❤️</title>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:linear-gradient(135deg,#ff9a9e,#fad0c4);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    overflow:hidden;
+    position:relative;
+}
+
+/* ── Fondo de partículas (corazones + estrellas flotantes) ── */
+.fondo-particulas{
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    pointer-events:none;
+    z-index:0;
+}
+.particula{
+    position:absolute;
+    opacity:0;
+    animation: flotar linear infinite;
+}
+/* Corazones SVG inline para mayor control */
+.particula.corazon{
+    color:#ff4d6d;
+    font-size:22px;
+    filter: drop-shadow(0 0 4px rgba(255,77,109,.5));
+}
+.particula.estrella{
+    color:#ffe066;
+    filter: drop-shadow(0 0 5px rgba(255,220,50,.8));
+}
+
+@keyframes flotar{
+    0%{
+        transform: translateY(100vh) rotate(0deg) scale(0.6);
+        opacity:0;
+    }
+    8%{ opacity:1; }
+    90%{ opacity:.85; }
+    100%{
+        transform: translateY(-120px) rotate(360deg) scale(1.1);
+        opacity:0;
+    }
+}
+
+/* ── Lluvia de girasoles y "Ceci" ── */
+.lluvia{
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    overflow:hidden;
+    pointer-events:none;
+    z-index:1;
+}
+.elemento-cae{
+    position:absolute;
+    top:-60px;
+    user-select:none;
+    animation-name:caer;
+    animation-timing-function:linear;
+    animation-iteration-count:1;
+}
+.girasol{ font-size:28px; }
+.ceci{
+    font-weight:bold;
+    color:#e6395b;
+    font-size:18px;
+    text-shadow:0 1px 2px rgba(0,0,0,.15);
+}
+@keyframes caer{
+    0%{ transform:translateY(0) rotate(0deg); opacity:1; }
+    100%{ transform:translateY(110vh) rotate(360deg); opacity:.9; }
+}
+
+/* ── Card ── */
+.card{
+    background:white;
+    padding:30px;
+    border-radius:20px;
+    width:90%;
+    max-width:420px;
+    text-align:center;
+    box-shadow:0 10px 25px rgba(0,0,0,.2);
+    position:relative;
+    z-index:2;
+}
+h2{ margin-bottom:5px; color:#e6395b; }
+.subtitulo{ color:#777; margin-bottom:25px; font-size:15px; }
+.contador{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+}
+.bloque{
+    background:#fff0f3;
+    border-radius:12px;
+    padding:12px 10px;
+    min-width:65px;
+    box-shadow:0 4px 10px rgba(0,0,0,.08);
+}
+.numero{ font-size:28px; font-weight:bold; color:#ff4d6d; }
+.etiqueta{ font-size:12px; color:#888; text-transform:uppercase; letter-spacing:.5px; }
+#mensajeFinal{ margin-top:20px; font-size:20px; font-weight:bold; color:#e6395b; }
+</style>
+</head>
+<body>
+
+<!-- Fondo flotante: corazones + estrellas -->
+<div class="fondo-particulas" id="fondoParticulas"></div>
+
+<!-- Lluvia: girasoles + Ceci -->
+<div class="lluvia" id="lluvia"></div>
+
+<div class="card">
+    <h2>⏳ Faltan pocas horas para tu cumpleaños mi amor ❤️</h2>
+    <div class="subtitulo">20 de junio de 2026</div>
+
+    <div class="contador" id="contador">
+        <div class="bloque">
+            <div class="numero" id="dias">0</div>
+            <div class="etiqueta">Días</div>
+        </div>
+        <div class="bloque">
+            <div class="numero" id="horas">0</div>
+            <div class="etiqueta">Horas</div>
+        </div>
+        <div class="bloque">
+            <div class="numero" id="minutos">0</div>
+            <div class="etiqueta">Min</div>
+        </div>
+        <div class="bloque">
+            <div class="numero" id="segundos">0</div>
+            <div class="etiqueta">Seg</div>
+        </div>
+    </div>
+
+    <div id="mensajeFinal"></div>
+</div>
+
+<script>
+
+/* ══════════════════════════════════════
+   CORAZONES Y ESTRELLAS FLOTANTES
+══════════════════════════════════════ */
+const fondoEl = document.getElementById("fondoParticulas");
+
+// SVG corazón simple
+function svgCorazon(size, color){
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
+        <path fill="${color}" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5
+        2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09
+        C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5
+        c0 3.77-3.4 6.86-8.55 11.54L12 21.35z"/>
+    </svg>`;
+}
+
+// SVG estrella de 5 puntas
+function svgEstrella(size, color){
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
+        <path fill="${color}" d="M12 2l3.09 6.26L22 9.27l-5 4.87
+        1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </svg>`;
+}
+
+// Colores variados para corazones
+const coloresCorazon = ["#ff4d6d","#ff85a1","#ff1744","#f06292","#e91e63"];
+// Colores variados para estrellas
+const coloresEstrella = ["#ffe066","#fff176","#ffd600","#ffca28","#ffffff"];
+
+function crearParticulaFondo(){
+    const el = document.createElement("div");
+    const esCorazon = Math.random() > 0.4; // 60% corazones, 40% estrellas
+
+    el.className = "particula " + (esCorazon ? "corazon" : "estrella");
+
+    const size = esCorazon
+        ? 14 + Math.random() * 22          // corazones: 14–36 px
+        : 10 + Math.random() * 18;         // estrellas: 10–28 px
+
+    const color = esCorazon
+        ? coloresCorazon[Math.floor(Math.random() * coloresCorazon.length)]
+        : coloresEstrella[Math.floor(Math.random() * coloresEstrella.length)];
+
+    el.innerHTML = esCorazon ? svgCorazon(size, color) : svgEstrella(size, color);
+
+    const posX   = Math.random() * 100;         // % horizontal
+    const duracion = 6 + Math.random() * 10;    // 6–16 s
+    const retraso  = Math.random() * 8;         // desfase inicial
+
+    el.style.left            = posX + "vw";
+    el.style.bottom          = "-60px";
+    el.style.animationDuration  = duracion + "s";
+    el.style.animationDelay     = retraso + "s";
+
+    fondoEl.appendChild(el);
+
+    // Eliminar y recrear al terminar (para que sea continuo sin acumular nodos)
+    setTimeout(function(){
+        el.remove();
+    }, (duracion + retraso) * 1000 + 500);
+}
+
+// Crear 30 partículas iniciales escalonadas
+for(let i = 0; i < 30; i++){
+    setTimeout(crearParticulaFondo, i * 200);
+}
+// Mantener el flujo continuo
+setInterval(crearParticulaFondo, 600);
+
+
+/* ══════════════════════════════════════
+   LLUVIA DE GIRASOLES Y "CECI"
+══════════════════════════════════════ */
+const contenedorLluvia = document.getElementById("lluvia");
+
+function crearElementoCae(){
+    const el = document.createElement("div");
+    const esGirasol = Math.random() > 0.45;
+
+    if(esGirasol){
+        el.className = "elemento-cae girasol";
+        el.innerHTML = "🌻";
+    } else {
+        el.className = "elemento-cae ceci";
+        el.innerHTML = "Ceci";
+    }
+
+    const inicioX  = Math.random() * 100;
+    const duracion = 5 + Math.random() * 5;
+    const tamano   = 0.8 + Math.random() * 0.9;
+
+    el.style.left              = inicioX + "vw";
+    el.style.animationDuration = duracion + "s";
+    el.style.fontSize          = ((esGirasol ? 28 : 18) * tamano) + "px";
+
+    contenedorLluvia.appendChild(el);
+    setTimeout(function(){ el.remove(); }, duracion * 1000);
+}
+
+setInterval(crearElementoCae, 350);
+
+
+/* ══════════════════════════════════════
+   CUENTA REGRESIVA
+══════════════════════════════════════ */
+const fechaObjetivo = new Date("2026-06-20T00:00:00").getTime();
+let confettiLanzado = false;
+
+function lanzarConfeti(){
+    var duration = 4000;
+    var end = Date.now() + duration;
+    (function frame(){
+        confetti({ particleCount:6, angle:60,  spread:60, origin:{x:0} });
+        confetti({ particleCount:6, angle:120, spread:60, origin:{x:1} });
+        if(Date.now() < end) requestAnimationFrame(frame);
+    }());
+}
+
+function actualizarContador(){
+    const ahora     = new Date().getTime();
+    const diferencia = fechaObjetivo - ahora;
+
+    if(diferencia <= 0){
+        document.getElementById("contador").style.display = "none";
+        document.getElementById("mensajeFinal").innerHTML =
+            "🎉 ¡Feliz cumpleaños mi amor! 🎂❤️<br><br>Espero que tengas un día hermoso 😘";
+        if(!confettiLanzado){ lanzarConfeti(); confettiLanzado = true; }
+        clearInterval(intervalo);
+        return;
+    }
+
+    const dias    = Math.floor(diferencia / (1000*60*60*24));
+    const horas   = Math.floor((diferencia % (1000*60*60*24)) / (1000*60*60));
+    const minutos = Math.floor((diferencia % (1000*60*60)) / (1000*60));
+    const segundos= Math.floor((diferencia % (1000*60)) / 1000);
+
+    document.getElementById("dias").innerHTML    = dias;
+    document.getElementById("horas").innerHTML   = horas;
+    document.getElementById("minutos").innerHTML = minutos;
+    document.getElementById("segundos").innerHTML= segundos;
+}
+
+actualizarContador();
+const intervalo = setInterval(actualizarContador, 1000);
+
+</script>
+</body>
+</html>
